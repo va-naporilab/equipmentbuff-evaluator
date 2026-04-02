@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>バフオプション強さ計算比較ツール</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700;900&family=Rajdhani:wght@500;600;700&display=swap');
+
+  :root {
+    --bg: #181c24;
+    --bg2: #20262f;
+    --bg3: #2a3140;
+    --bg4: #343d50;
+    --border: #38404f;
+    --border2: #4a5568;
+    --text: #e6edf3;
+    --text2: #9aaabb;
+    --text3: #6e7e90;
+    --accent: #f0a500;
+    --accent2: #ffc840;
+    --red: #ff6b6b;
+    --red2: #ffaaaa;
+    --redbg: rgba(255,107,107,0.15);
+    --green: #56d364;
+    --green2: #90e8a0;
+    --greenbg: rgba(86,211,100,0.15);
+    --blue: #58a6ff;
+    --card-radius: 10px;
+    --shadow: 0 4px 24px rgba(0,0,0,0.45);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 0 0 80px;
+  }
+
+  .site-header {
+    background: linear-gradient(135deg, #12161e 0%, #1e2435 50%, #12161e 100%);
+    border-bottom: 2px solid var(--accent);
+    padding: 16px 24px 12px;
+    position: sticky; top: 0; z-index: 200;
+    box-shadow: 0 2px 20px rgba(240,165,0,0.2);
+  }
+  .site-header h1 { font-size: 1.2rem; font-weight: 900; color: var(--accent2); letter-spacing: 0.03em; }
+  .site-header .subtitle { font-size: 0.7rem; color: var(--text2); margin-top: 2px; letter-spacing: 0.05em; }
+
+  .main-wrap {
+    max-width: 1100px; margin: 0 auto;
+    padding: 18px 14px 0;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+
+  .card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--card-radius); box-shadow: var(--shadow); overflow: hidden;
+  }
+  .card-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 13px 18px; cursor: pointer; user-select: none;
+    background: var(--bg3); border-bottom: 1px solid var(--border);
+    transition: background 0.18s;
+  }
+  .card-header:hover { background: var(--bg4); }
+  .card-title { font-weight: 700; font-size: 1.05rem; color: var(--accent2); flex: 1; }
+  .card-badge { font-size: 0.72rem; background: var(--accent); color: #000; border-radius: 4px; padding: 1px 8px; font-weight: 700; }
+  .collapse-icon { font-size: 0.8rem; color: var(--text2); transition: transform 0.22s; min-width: 16px; text-align: center; }
+  .card.collapsed .collapse-icon { transform: rotate(-90deg); }
+  .card-body { padding: 18px; }
+  .card.collapsed .card-body { display: none; }
+
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(215px, 1fr)); gap: 12px; }
+  .form-group { display: flex; flex-direction: column; gap: 4px; }
+  .form-group label { font-size: 0.77rem; color: var(--text2); font-weight: 500; }
+
+  input[type=number], input[type=text] {
+    background: var(--bg3); border: 1px solid var(--border2);
+    border-radius: 6px; color: var(--text);
+    padding: 6px 10px; width: 100%; transition: border-color 0.18s;
+  }
+  input[type=number] { font-family: 'Rajdhani', monospace; font-size: 1rem; font-weight: 600; -moz-appearance: textfield; }
+  input[type=number]::-webkit-outer-spin-button, input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+  input[type=number]:focus, input[type=text]:focus { outline: none; border-color: var(--accent); }
+
+  .toggle-row { display: flex; align-items: center; gap: 10px; margin: 8px 0; flex-wrap: wrap; }
+  .toggle-label { font-size: 0.83rem; color: var(--text); font-weight: 500; min-width: 210px; }
+  .yn-btn { display: flex; border-radius: 6px; overflow: hidden; border: 1px solid var(--border2); }
+  .yn-btn button {
+    padding: 5px 18px; border: none; cursor: pointer;
+    font-family: 'Noto Sans JP', sans-serif; font-size: 0.8rem; font-weight: 700;
+    transition: all 0.15s; background: var(--bg3); color: var(--text2);
+  }
+  .yn-btn button.active-yes { background: var(--green); color: #000; }
+  .yn-btn button.active-no  { background: var(--bg4); color: var(--text2); }
+  .yn-extra { margin-top: 10px; padding: 12px 14px; background: var(--bg3); border-radius: 8px; border-left: 3px solid var(--accent); }
+  .yn-note { font-size: 0.72rem; color: var(--text2); margin-bottom: 10px; line-height: 1.65; }
+  .section-sep { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
+
+  .scores-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(215px, 1fr)); gap: 10px; }
+  .score-item { background: var(--bg3); border-radius: 8px; padding: 10px 14px; border: 1px solid var(--border); }
+  .score-item .s-label { font-size: 0.72rem; color: var(--text2); margin-bottom: 2px; }
+  .score-item .s-value { font-family: 'Rajdhani', monospace; font-size: 1.2rem; font-weight: 700; color: var(--accent2); }
+  .score-item.big { border-color: var(--accent); background: linear-gradient(135deg, var(--bg3), rgba(240,165,0,0.07)); }
+  .score-item.big .s-value { font-size: 1.5rem; }
+
+  .equip-type-wrap {
+    background: var(--bg2); border: 2px solid var(--accent);
+    border-radius: var(--card-radius); padding: 14px 18px;
+    box-shadow: 0 0 20px rgba(240,165,0,0.1);
+  }
+  .equip-type-wrap > label { display: block; font-size: 0.8rem; color: var(--accent); font-weight: 700; margin-bottom: 8px; letter-spacing: 0.05em; }
+  .equip-type-wrap select {
+    width: 100%; max-width: 320px;
+    background: var(--bg3); border: 1px solid var(--accent);
+    border-radius: 6px; color: var(--text);
+    font-family: 'Noto Sans JP', sans-serif; font-size: 0.95rem; font-weight: 700;
+    padding: 8px 12px; cursor: pointer;
+  }
+  .equip-note-text { font-size: 0.7rem; color: var(--text3); line-height: 1.8; margin-top: 8px; }
+  .equip-note-text p { margin-bottom: 3px; }
+  .equip-note-text .note-heading { color: var(--accent); font-weight: 700; margin-top: 8px; }
+
+  .compare-banner {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--card-radius); padding: 14px 18px; box-shadow: var(--shadow);
+  }
+  .compare-banner .cb-title { font-size: 0.75rem; color: var(--accent); font-weight: 700; letter-spacing: 0.08em; margin-bottom: 10px; }
+  .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .compare-col {
+    background: var(--bg3); border-radius: 8px;
+    padding: 12px 14px; border: 1px solid var(--border);
+  }
+  .compare-col.winner { border-color: var(--accent2); background: linear-gradient(135deg, var(--bg3), rgba(240,165,0,0.09)); }
+  .cc-name { font-size: 0.75rem; color: var(--text2); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px; }
+  .cc-score { font-family: 'Rajdhani', monospace; font-size: 2rem; font-weight: 700; color: var(--accent2); line-height: 1; }
+  .cc-sub { font-size: 0.7rem; color: var(--text3); margin-top: 4px; }
+  .cc-sub span { margin-right: 8px; }
+  .compare-diff { grid-column: span 2; text-align: center; font-size: 0.82rem; color: var(--text2); padding-top: 6px; }
+  .diff-val { font-family: 'Rajdhani', monospace; font-weight: 700; font-size: 1.05rem; }
+  .diff-pos { color: var(--green2); }
+  .diff-neg { color: var(--red2); }
+  .diff-zero { color: var(--text3); }
+
+  .equip-name-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .equip-name-row label { font-size: 0.75rem; color: var(--text2); white-space: nowrap; }
+  .equip-name-input {
+    background: var(--bg3); border: 1px solid var(--border2);
+    border-radius: 6px; color: var(--accent2);
+    font-family: 'Noto Sans JP', sans-serif; font-size: 0.88rem; font-weight: 700;
+    padding: 5px 10px; flex: 1; width: auto;
+  }
+  .equip-action-row { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+  .equip-action-btn {
+    padding: 5px 12px; border-radius: 6px; border: 1px solid var(--border2);
+    background: var(--bg3); color: var(--text2); cursor: pointer;
+    font-size: 0.75rem; font-weight: 600; font-family: 'Noto Sans JP', sans-serif;
+    transition: all 0.15s;
+  }
+  .equip-action-btn:hover { background: var(--bg4); color: var(--text); }
+  .equip-action-btn.copy-btn { border-color: var(--blue); color: var(--blue); }
+  .equip-action-btn.copy-btn:hover { background: rgba(88,166,255,0.12); }
+  .equip-action-btn.clear-btn { border-color: var(--red); color: var(--red); }
+  .equip-action-btn.clear-btn:hover { background: rgba(255,107,107,0.12); }
+
+  .chip-type-row { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+  .chip-type-btn {
+    padding: 5px 14px; border-radius: 6px; border: 1px solid var(--border2);
+    background: var(--bg3); color: var(--text2); cursor: pointer;
+    font-family: 'Noto Sans JP', sans-serif; font-size: 0.78rem; font-weight: 600; transition: all 0.15s;
+  }
+  .chip-type-btn.active { background: var(--accent); color: #000; border-color: var(--accent); }
+
+  .buff-list { display: flex; flex-direction: column; gap: 7px; }
+  .buff-row {
+    display: grid; grid-template-columns: 1fr 80px auto;
+    gap: 7px; align-items: center;
+    background: var(--bg3); border-radius: 8px;
+    padding: 7px 10px; border: 1px solid var(--border);
+  }
+  .buff-head { display: flex; align-items: center; gap: 7px; }
+  .buff-num { font-size: 0.68rem; color: var(--text3); min-width: 18px; }
+  .buff-row select {
+    background: var(--bg4); border: 1px solid var(--border2);
+    border-radius: 5px; color: var(--text);
+    font-family: 'Noto Sans JP', sans-serif; font-size: 0.8rem;
+    padding: 4px 7px; cursor: pointer; min-width: 130px; flex: 1;
+  }
+  .buff-row select:focus { outline: none; border-color: var(--accent); }
+  .buff-val-input {
+    background: var(--bg4); border: 1px solid var(--border2);
+    border-radius: 5px; color: var(--text);
+    font-family: 'Rajdhani', monospace; font-size: 0.95rem; font-weight: 600;
+    padding: 4px 7px; width: 80px; text-align: right; -moz-appearance: textfield;
+  }
+  .buff-val-input::-webkit-outer-spin-button, .buff-val-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+  .buff-val-input:focus { outline: none; border-color: var(--accent); }
+
+  .buff-score-both { display: flex; flex-direction: column; gap: 3px; min-width: 95px; }
+  .buff-score-atk {
+    font-family: 'Rajdhani', monospace; font-size: 0.82rem; font-weight: 700;
+    color: var(--red2); background: var(--redbg); border-radius: 4px;
+    padding: 2px 7px; text-align: right; white-space: nowrap; cursor: help;
+  }
+  .buff-score-hp {
+    font-family: 'Rajdhani', monospace; font-size: 0.82rem; font-weight: 700;
+    color: var(--green2); background: var(--greenbg); border-radius: 4px;
+    padding: 2px 7px; text-align: right; white-space: nowrap; cursor: help;
+  }
+
+  .buff-section-label { font-size: 0.72rem; color: var(--accent); font-weight: 700; letter-spacing: 0.07em; margin: 10px 0 4px; }
+  .field-section > summary {
+    font-size: 0.72rem; color: var(--accent); font-weight: 700;
+    letter-spacing: 0.07em; margin: 10px 0 4px; cursor: pointer;
+    list-style: none; display: flex; align-items: center; gap: 5px;
+  }
+  .field-section > summary::-webkit-details-marker { display: none; }
+  .field-section > summary::before { content: '▶'; font-size: 0.6rem; display: inline-block; transition: transform 0.2s; }
+  .field-section[open] > summary::before { transform: rotate(90deg); }
+
+  .equip-footer {
+    margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border);
+    display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+  }
+  .equip-total { display: flex; flex-direction: column; gap: 5px; flex: 1; }
+  .equip-total-row { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: var(--text2); }
+  .equip-total-val { font-family: 'Rajdhani', monospace; font-weight: 700; font-size: 1rem; }
+  .integrated-score {
+    background: linear-gradient(135deg, var(--bg3), rgba(240,165,0,0.1));
+    border: 2px solid var(--accent); border-radius: 8px; padding: 10px 18px; text-align: center;
+  }
+  .integrated-score .is-label { font-size: 0.7rem; color: var(--accent); font-weight: 700; letter-spacing: 0.05em; }
+  .integrated-score .is-val { font-family: 'Rajdhani', monospace; font-size: 1.8rem; font-weight: 700; color: var(--accent2); line-height: 1.2; }
+
+  @media (max-width: 600px) {
+    .buff-row { grid-template-columns: 1fr 70px auto; }
+    .scores-grid, .compare-grid { grid-template-columns: 1fr; }
+    .compare-diff { grid-column: span 1; }
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <h1>バフオプション強さ計算比較ツール for ビビアミ・TW</h1>
+  <div class="subtitle">by Napo &nbsp;feat. Claude</div>
+</header>
+
+<div class="main-wrap">
+
+  <!-- ① バフ入力 -->
+  <div class="card" id="card1">
+    <div class="card-header" onclick="toggleCard('card1')">
+      <span class="card-badge">①</span>
+      <span class="card-title">バフ入力</span>
+      <span class="collapse-icon">▼</span>
+    </div>
+    <div class="card-body">
+      <div class="form-grid">
+        <div class="form-group"><label>生命（％）</label>
+          <input type="number" id="inp_HP" value="3500" oninput="recalc()" onfocus="clearZero(this)" onblur="fillEmpty(this)"></div>
+        <div class="form-group"><label>攻撃（％）</label>
+          <input type="number" id="inp_ATK" value="3500" oninput="recalc()" onfocus="clearZero(this)" onblur="fillEmpty(this)"></div>
+        <div class="form-group"><label>ダメ増（％）</label>
+          <input type="number" id="inp_DMGInc" value="500" oninput="recalc()" onfocus="clearZero(this)" onblur="fillEmpty(this)"></div>
+        <div class="form-group"><label>ダメ減（％）</label>
+          <input type="number" id="inp_DMGDec" value="500" oninput="recalc()" onfocus="clearZero(this)" onblur="fillEmpty(this)"></div>
+        <div class="form-group"><label>防御（％）</label>
+          <input type="number" id="inp_DEF" value="150" oninput="recalc()" onfocus="clearZero(this)" onblur="fillEmpty(this)"></div>
+        <div class="form-group"><label>出撃台数（台）</label>
+          <input type="number" id="inp_MarchSize" value="220" oninput="recalc()" onfocus="clearZero(this)" onblur="fillEmpty(this)"></div>
+        <div class="form-group"><label>装備＆絆の開戦シールド（％）</label>
+          <input type="number" id="inp_Shield1" value="33" oninput="recalc()" onfocus="clearZero(this)" onblur="fillEmpty(this)"></div>
+        <div class="form-group"><label>英雄開戦シールドｘ専用倍率（％）</label>
+          <input type="number" id="inp_Shield2" value="80" oninput="recalc()" onfocus="clearZero(this)" onblur="fillEmpty(this)"></div>
+      </div>
+      <hr class="section-sep">
+      <div class="toggle-row">
+        <span class="toggle-label">会心を計算に入れるか</span>
+        <div class="yn-btn">
+          <button id="btn_crt_yes" onclick="setToggle('crt','yes')">ＹＥＳ</button>
+          <button id="btn_crt_no" class="active-no" onclick="setToggle('crt','no')">ＮＯ</button>
+        </div>
+      </div>
+      <div id="crt_extra" class="yn-extra" style="display:none">
+        <div class="yn-note">対人での会心を想定するため、世界ボスの仕様とは異なる。確率計算は観測に基づく暫定的なもので正確でない可能性がある。</div>
+        <div class="form-grid">
+          <div class="form-group"><label>会心率加算（％）</label>
+            <input type="number" id="inp_CrtRate" value="50" oninput="recalc()" onfocus="clearZero(this)" onblur="fillEmpty(this)"></div>
+          <div class="form-group"><label>会心ダメ（％）</label>
+            <input type="number" id="inp_CrtDMG" value="15" oninput="recalc()" onfocus="clearZero(this)" onblur="fillEmpty(this)"></div>
+        </div>
+      </div>
+      <hr class="section-sep">
+      <div class="toggle-row">
+        <span class="toggle-label">兵種相性を計算に入れるか</span>
+        <div class="yn-btn">
+          <button id="btn_aff_yes" onclick="setToggle('aff','yes')">ＹＥＳ</button>
+          <button id="btn_aff_no" class="active-no" onclick="setToggle('aff','no')">ＮＯ</button>
+        </div>
+      </div>
+      <div id="aff_extra" class="yn-extra" style="display:none">
+        <div class="yn-note">当ツールでは兵種相性は有利時のみなので１／３の確率で発動するものとして効果を減衰させる。</div>
+        <div class="form-grid">
+          <div class="form-group"><label>兵種相性（％）</label>
+            <input type="number" id="inp_Affinity" value="120" oninput="recalc()" onfocus="clearZero(this)" onblur="fillEmpty(this)"></div>
+          <div class="form-group"><label>相性防御加算（％）</label>
+            <input type="number" id="inp_AffinDEF" value="0" oninput="recalc()" onfocus="clearZero(this)" onblur="fillEmpty(this)"></div>
+        </div>
+      </div>
+      <hr class="section-sep">
+      <div class="toggle-row">
+        <span class="toggle-label">重装バフ（左側チップ）を計算するか</span>
+        <div class="yn-btn">
+          <button id="btn_ht_yes" onclick="setToggle('ht','yes')">ＹＥＳ</button>
+          <button id="btn_ht_no" class="active-no" onclick="setToggle('ht','no')">ＮＯ</button>
+        </div>
+      </div>
+      <div id="ht_extra" class="yn-extra" style="display:none">
+        <div class="form-grid">
+          <div class="form-group"><label>全体における重装の火力（％）</label>
+            <input type="number" id="inp_HTweight_pct" value="14" oninput="recalc()" onfocus="clearZero(this)" onblur="fillEmpty(this)"></div>
+          <div class="form-group"><label>重装攻速の評価は重装防御の何倍にするか</label>
+            <input type="number" id="inp_HTspdweight" value="1.0" step="0.1" oninput="recalc()" onfocus="clearZero(this)" onblur="fillEmpty(this)"></div>
+        </div>
+      </div>
+      <hr class="section-sep">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>火力乖離係数</label>
+          <input type="number" id="inp_Divergence" value="1.4" step="0.1" oninput="recalc()" onfocus="clearZero(this)" onblur="fillEmpty(this)">
+        </div>
+      </div>
+      <div class="yn-note" style="margin-top:6px">攻撃バフは戦報に書いてあるバフからだいぶ大きい値が実際の火力計算で使われてる模様。そのため、そのおよその増加倍率を係数として攻撃バフに掛ける。</div>
+    </div>
+  </div>
+
+  <!-- ② 換算値・強さ表示 -->
+  <div class="card" id="card2">
+    <div class="card-header" onclick="toggleCard('card2')">
+      <span class="card-badge">②</span>
+      <span class="card-title">換算値・強さ表示</span>
+      <span class="collapse-icon">▼</span>
+    </div>
+    <div class="card-body">
+      <div class="scores-grid">
+        <div class="score-item big"><div class="s-label">総火力</div><div class="s-value" id="disp_tfp">—</div></div>
+        <div class="score-item big"><div class="s-label">総耐久</div><div class="s-value" id="disp_tdur">—</div></div>
+        <div class="score-item"><div class="s-label">攻撃１は生命１に対して</div><div class="s-value" id="disp_scoreATKhp">—</div></div>
+        <div class="score-item"><div class="s-label">ダメ増１は攻撃にすると</div><div class="s-value" id="disp_scoreDMGInc">—</div></div>
+        <div class="score-item"><div class="s-label">ダメ減１は生命にすると</div><div class="s-value" id="disp_scoreDMGDec">—</div></div>
+        <div class="score-item"><div class="s-label">防御１は生命にすると</div><div class="s-value" id="disp_scoreDEF">—</div></div>
+        <div class="score-item"><div class="s-label">開戦シールド１は生命にすると</div><div class="s-value" id="disp_scoreShield">—</div></div>
+        <div class="score-item"><div class="s-label">出撃上限１は生命・攻撃にすると</div><div class="s-value" id="disp_scoreMS" style="font-size:0.92rem">—</div></div>
+        <div class="score-item" id="score_affin_item" style="display:none"><div class="s-label">相性防御１は生命にすると</div><div class="s-value" id="disp_scoreAffinDEF">—</div></div>
+        <div class="score-item" id="score_crtrate_item" style="display:none"><div class="s-label">会心率加算１は攻撃にすると</div><div class="s-value" id="disp_scoreCrtRate">—</div></div>
+        <div class="score-item" id="score_crtdmg_item" style="display:none"><div class="s-label">会心ダメ１は攻撃にすると</div><div class="s-value" id="disp_scoreCrtDMG">—</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 装備種別 -->
+  <div class="equip-type-wrap">
+    <label>▶ 評価・比較する装備類の種別</label>
+    <select id="sel_equipType" onchange="onEquipTypeChange()">
+      <option value="other" selected>その他・レアスキル等</option>
+      <option value="chip">重装チップ</option>
+      <option value="enigma">エニグマ</option>
+      <option value="titan">タイタン</option>
+    </select>
+    <details style="margin-top:8px">
+      <summary style="font-size:0.75rem;color:var(--text2);cursor:pointer;font-weight:600;list-style:none;display:flex;align-items:center;gap:5px">
+        <span id="note_arrow" style="font-size:0.6rem;display:inline-block;transition:transform 0.2s">▶</span>
+        注意事項を表示
+      </summary>
+      <div class="equip-note-text" style="margin-top:8px">
+        <p>装備バフのうち、特定の１兵種において有効なバフのみを入力する。</p>
+        <p>エレメント類は効果がないものとする。</p>
+        <p>重装のみのバフは重装の火力の重みに応じて全体バフに相当するよう修正する。</p>
+        <p>兵種相性バフは発動確率を考え１／３倍の評価とする。</p>
+        <p>侵攻・防衛時指定のバフは１／２倍の評価とする。</p>
+        <p class="note-heading">統合換算スコアについて：</p>
+        <p>戦報内に記載されない攻撃バフが大きいことを考慮して、攻撃換算値１あたりの評価を下げ、生命バフを基準に一元化したスコアを加算し、出力している。ここで、同一バフを大きく伸ばすことより複数種類のバフを少しずつ上げた方が実際は若干強いが、簡素化のため単純換算と合算を採用している。</p>
+      </div>
+    </details>
+  </div>
+
+  <!-- 比較サマリー -->
+  <div class="compare-banner">
+    <div class="cb-title">▶ 比較サマリー</div>
+    <div class="compare-grid">
+      <div class="compare-col" id="cmp_col1">
+        <div class="cc-name" id="cmp_name1">装備１</div>
+        <div class="cc-score" id="cmp_score1">—</div>
+        <div class="cc-sub">
+          <span>攻 <span id="cmp_atk1" style="color:var(--red2)">—</span></span>
+          <span>生 <span id="cmp_hp1" style="color:var(--green2)">—</span></span>
+        </div>
+      </div>
+      <div class="compare-col" id="cmp_col2">
+        <div class="cc-name" id="cmp_name2">装備２</div>
+        <div class="cc-score" id="cmp_score2">—</div>
+        <div class="cc-sub">
+          <span>攻 <span id="cmp_atk2" style="color:var(--red2)">—</span></span>
+          <span>生 <span id="cmp_hp2" style="color:var(--green2)">—</span></span>
+        </div>
+      </div>
+      <div class="compare-diff" id="cmp_diff">差分：—</div>
+    </div>
+  </div>
+
+  <!-- ③ 装備１ -->
+  <div class="card" id="card3">
+    <div class="card-header" onclick="toggleCard('card3')">
+      <span class="card-badge">③</span>
+      <span class="card-title" id="card3_title">装備１のバフ</span>
+      <span class="collapse-icon">▼</span>
+    </div>
+    <div class="card-body" id="equip1_body"></div>
+  </div>
+
+  <!-- ④ 装備２ -->
+  <div class="card" id="card4">
+    <div class="card-header" onclick="toggleCard('card4')">
+      <span class="card-badge">④</span>
+      <span class="card-title" id="card4_title">装備２のバフ</span>
+      <span class="collapse-icon">▼</span>
+    </div>
+    <div class="card-body" id="equip2_body"></div>
+  </div>
+
+</div>
+
+<script>
+const state = {
+  toggle_crt: false, toggle_aff: false, toggle_ht: false,
+  equipType: 'other',
+  chip1Type: 'multiple', chip2Type: 'multiple',
+  equip1Name: '', equip2Name: '',
+  equip1Scores: null, equip2Scores: null,
+};
+let R = {};
+
+function toggleCard(id) { document.getElementById(id).classList.toggle('collapsed'); }
+
+function clearZero(el) { if (parseFloat(el.value) === 0) el.value = ''; }
+function fillEmpty(el) { if (el.value === '' || el.value == null) { el.value = 0; recalc(); } }
+function fillEmptyBuff(el, idx, prefix, i) {
+  if (el.value === '' || el.value == null) { el.value = 0; onBuffChange(idx, prefix, i); }
+}
+
+function setToggle(key, val) {
+  state['toggle_' + key] = (val === 'yes');
+  const isYes = state['toggle_' + key];
+  document.getElementById('btn_' + key + '_yes').className = isYes ? 'active-yes' : '';
+  document.getElementById('btn_' + key + '_no').className  = isYes ? '' : 'active-no';
+  document.getElementById(key + '_extra').style.display = isYes ? 'block' : 'none';
+  recalc();
+}
+
+function gv(id) { return parseFloat(document.getElementById(id).value) || 0; }
+
+function recalc() {
+  const HP        = gv('inp_HP');
+  const ATK       = gv('inp_ATK');
+  const DMGInc    = gv('inp_DMGInc');
+  const DMGDec    = gv('inp_DMGDec');
+  const DEF       = gv('inp_DEF');
+  const MarchSize = gv('inp_MarchSize') || 1;
+  const Shield    = gv('inp_Shield1') + gv('inp_Shield2');
+  const Divergence    = gv('inp_Divergence') || 1;
+  const HTweight_pct  = gv('inp_HTweight_pct');
+  const HTspdweight   = parseFloat(document.getElementById('inp_HTspdweight').value) || 1;
+  const useCrt = state.toggle_crt;
+  const useAff = state.toggle_aff;
+  const CrtRate  = useCrt ? gv('inp_CrtRate')  : 0;
+  const CrtDMG   = useCrt ? gv('inp_CrtDMG')   : 0;
+  const Affinity = useAff ? gv('inp_Affinity')  : 0;
+  const AffinDEF = useAff ? gv('inp_AffinDEF')  : 0;
+
+  R.ATK      = (100 + ATK + Affinity / 3) / 100 * Divergence;
+  R.HP       = (100 + HP) / 100;
+  R.DMGInc   = (100 + DMGInc) / 100;
+  R.DMGDec   = (100 + DMGDec) / 100;
+  R.DEF      = (100 + DEF) / 100;
+  R.Shield   = (100 + Shield) / 100;
+  R.AffinDEF = useAff ? (100 + (Affinity + AffinDEF) / 3) / 100 : 1;
+  R.CrtRate  = useCrt ? (10 * (100 + CrtRate) / 100 - 3) / 100  : 0;
+  R.CrtDMG   = (100 + 50 + CrtDMG) / 100;
+  R._CrtRate = CrtRate; R._CrtDMG = CrtDMG;
+  R._Affinity = Affinity; R._AffinDEF = AffinDEF;
+  R._MarchSize = MarchSize;
+  R._HTweight  = HTweight_pct / 100;
+  R._HTspdweight = HTspdweight;
+
+  const crtFactor = (1 - R.CrtRate) + R.CrtRate * R.CrtDMG;
+  R.totalFirePower  = R.ATK * R.DMGInc * crtFactor;
+  R.totalDurability = R.HP  * R.DMGDec * R.DEF * R.AffinDEF * R.Shield;
+
+  R.scoreATKhp  = R.HP  / R.ATK;
+  R.scoreDMGInc = R.ATK / R.DMGInc;
+  R.scoreDMGDec = R.HP  / R.DMGDec;
+  R.scoreDEF    = R.HP  / R.DEF;
+  R.scoreShield = R.HP  / R.Shield;
+  R.scoreMShp   = R.HP  * 100 / MarchSize;
+  R.scoreMSatk  = R.ATK * 100 / MarchSize;
+  R.scoreAffinDEF = useAff ? (R.HP * 100 * (1/3)) / (R.AffinDEF * 100) : 0;
+
+  if (useCrt) {
+    const rc1 = (10 * (100 + CrtRate + 1) / 100 - 3) / 100;
+    R.scoreCrtRate = R.ATK * 100 * (rc1 - R.CrtRate) * (R.CrtDMG - 1);
+    const rd1 = (100 + 50 + CrtDMG + 1) / 100;
+    R.scoreCrtDMG  = R.ATK * R.CrtRate * rd1 / R.CrtDMG;
+  } else {
+    R.scoreCrtRate = 0; R.scoreCrtDMG = 0;
+  }
+
+  updateScoreDisplay();
+  refreshAllBuffScores(1);
+  refreshAllBuffScores(2);
+  updateEquipTotals(1);
+  updateEquipTotals(2);
+}
+
+function fmt(v, d=2) { return isFinite(v) ? v.toFixed(d) : '—'; }
+
+function updateScoreDisplay() {
+  document.getElementById('disp_tfp').textContent  = fmt(R.totalFirePower)  + ' 倍';
+  document.getElementById('disp_tdur').textContent = fmt(R.totalDurability) + ' 倍';
+  document.getElementById('disp_scoreATKhp').textContent  = fmt(R.scoreATKhp);
+  document.getElementById('disp_scoreDMGInc').textContent = fmt(R.scoreDMGInc);
+  document.getElementById('disp_scoreDMGDec').textContent = fmt(R.scoreDMGDec);
+  document.getElementById('disp_scoreDEF').textContent    = fmt(R.scoreDEF);
+  document.getElementById('disp_scoreShield').textContent = fmt(R.scoreShield);
+  document.getElementById('disp_scoreMS').innerHTML = '生命 <b>' + fmt(R.scoreMShp) + '</b>、攻撃 <b>' + fmt(R.scoreMSatk) + '</b>';
+  const showAff = state.toggle_aff, showCrt = state.toggle_crt;
+  document.getElementById('score_affin_item').style.display   = showAff ? '' : 'none';
+  document.getElementById('score_crtrate_item').style.display = showCrt ? '' : 'none';
+  document.getElementById('score_crtdmg_item').style.display  = showCrt ? '' : 'none';
+  if (showAff) document.getElementById('disp_scoreAffinDEF').textContent = fmt(R.scoreAffinDEF);
+  if (showCrt) {
+    document.getElementById('disp_scoreCrtRate').textContent = fmt(R.scoreCrtRate);
+    document.getElementById('disp_scoreCrtDMG').textContent  = fmt(R.scoreCrtDMG);
+  }
+}
+
+function onEquipTypeChange() {
+  state.equipType = document.getElementById('sel_equipType').value;
+  state.chip1Type = 'multiple'; state.chip2Type = 'multiple';
+  renderEquip(1); renderEquip(2);
+}
+
+const CHIP_LEFT_OPTIONS  = ['なし','重装開戦シールド','重装防御','重装攻速','重装ダメ増','重装ダメ減','重装攻撃','重装生命','重装会心率','重装会心ダメ'];
+const CHIP_CORE_OPTIONS  = ['なし','防御（全体）','ダメ増（全体）','ダメ減（全体）','攻撃（全体）','生命（全体）','重装防御','重装ダメ増','重装ダメ減','重装攻撃','重装生命'];
+const CHIP_RIGHT_OPTIONS = ['なし','防御（全体）','ダメ増（全体）','ダメ減（全体）','攻撃（全体）','生命（全体）'];
+const CHIP_ALL_OPTIONS   = ['防御（全体）','ダメ増（全体）','ダメ減（全体）','攻撃（全体）','生命（全体）','重装開戦シールド','重装防御','重装攻速','重装ダメ増','重装ダメ減','重装攻撃','重装生命','重装会心率','重装会心ダメ'];
+const ENIGMA_MAIN = ['なし','侵攻・防衛時の攻撃','侵攻・防衛時の生命','ダメ増','ダメ減','防御','出撃'];
+const ENIGMA_SUB  = ['なし','ダメ増','ダメ減','攻撃','生命','相性防御'];
+const ENIGMA_FLD  = ['なし','防御','ダメ増','ダメ減','攻撃','生命'];
+const TITAN_RAND  = ['なし','防御','ダメ増','ダメ減','攻撃','生命'];
+const OTHER_OPTIONS = ['なし','出撃','ダメ増','ダメ減','攻撃','生命','会心率','会心ダメ'];
+
+function computeBuffScore(buffType, rawVal) {
+  if (!buffType || buffType === 'なし' || rawVal === 0) return { atk: null, hp: null, tooltip: '' };
+  let effectiveVal = rawVal;
+  let resolvedType = buffType;
+  const tipParts = [`入力値: ${rawVal}`];
+
+  if (buffType !== '重装攻速' && buffType.startsWith('重装')) {
+    effectiveVal = rawVal * R._HTweight;
+    resolvedType = buffType.replace('重装', '');
+    tipParts.push(`重装係数×${R._HTweight.toFixed(3)}`);
+  }
+  if (buffType.includes('侵攻・防衛時')) {
+    effectiveVal = rawVal * 0.5;
+    resolvedType = buffType.replace('侵攻・防衛時の', '');
+    tipParts.push('侵攻・防衛補正×0.5');
+  }
+  resolvedType = resolvedType.replace('（全体）', '');
+
+  const v = effectiveVal;
+  let result = { atk: null, hp: null };
+
+  if (resolvedType === '攻撃')         { result = { atk: v, hp: null }; }
+  else if (resolvedType === '生命')    { result = { atk: null, hp: v }; }
+  else if (resolvedType === 'ダメ増')  { result = { atk: v * R.scoreDMGInc, hp: null }; tipParts.push(`×scoreDMGInc(${fmt(R.scoreDMGInc)})`); }
+  else if (resolvedType === 'ダメ減')  { result = { atk: null, hp: v * R.scoreDMGDec }; tipParts.push(`×scoreDMGDec(${fmt(R.scoreDMGDec)})`); }
+  else if (resolvedType === '防御')    { result = { atk: null, hp: v * R.scoreDEF }; tipParts.push(`×scoreDEF(${fmt(R.scoreDEF)})`); }
+  else if (resolvedType === '相性防御'){ result = { atk: null, hp: v * R.scoreAffinDEF }; tipParts.push(`×scoreAffinDEF(${fmt(R.scoreAffinDEF)})`); }
+  else if (resolvedType === '開戦シールド') { result = { atk: null, hp: v * R.scoreShield }; tipParts.push(`×scoreShield(${fmt(R.scoreShield)})`); }
+  else if (resolvedType === '会心率' || resolvedType === '会心') { result = { atk: v * R.scoreCrtRate, hp: null }; tipParts.push(`×scoreCrtRate(${fmt(R.scoreCrtRate)})`); }
+  else if (resolvedType === '会心ダメ') { result = { atk: v * R.scoreCrtDMG, hp: null }; tipParts.push(`×scoreCrtDMG(${fmt(R.scoreCrtDMG)})`); }
+  else if (resolvedType === '出撃')    { result = { atk: v * R.scoreMSatk, hp: v * R.scoreMShp }; tipParts.push(`×scoreMSatk(${fmt(R.scoreMSatk)}), ×scoreMShp(${fmt(R.scoreMShp)})`); }
+  else if (buffType === '重装攻速') {
+    const coeff = R.scoreDEF * R._HTweight * R._HTspdweight / R.scoreATKhp;
+    result = { atk: rawVal * coeff, hp: null };
+    tipParts.push(`係数=${fmt(coeff,4)}`);
+  }
+  result.tooltip = tipParts.join(' | ');
+  return result;
+}
+
+function renderEquip(idx) {
+  const body = document.getElementById('equip' + idx + '_body');
+  const equipType = state.equipType;
+  const otherIdx = idx === 1 ? 2 : 1;
+  let html = '';
+
+  html += `
+  <div class="equip-name-row">
+    <label>装備名：</label>
+    <input type="text" class="equip-name-input" id="equip_name_${idx}"
+      value="${escHtml(state['equip' + idx + 'Name'])}"
+      placeholder="装備名を入力..." oninput="onEquipNameChange(${idx})">
+  </div>
+  <div class="equip-action-row">
+    <button class="equip-action-btn copy-btn" onclick="copyEquipData(${idx},${otherIdx})">装備${otherIdx}のバフをコピー</button>
+    <button class="equip-action-btn clear-btn" onclick="clearEquipData(${idx})">バフを一括クリア</button>
+  </div>`;
+
+  if (equipType === 'chip') {
+    const chipType = state['chip' + idx + 'Type'] || 'multiple';
+    html += `<div class="chip-type-row">${['multiple','left','core','right'].map(t =>
+      `<button class="chip-type-btn ${chipType===t?'active':''}" onclick="setChipType(${idx},'${t}')">${{multiple:'複数のチップ',left:'左側チップ',core:'コアチップ',right:'右側チップ'}[t]}</button>`
+    ).join('')}</div>`;
+    let opts, count, defs;
+    if (chipType==='left')       { opts=CHIP_LEFT_OPTIONS; count=5; defs=Array(5).fill('なし'); }
+    else if (chipType==='core')  { opts=CHIP_CORE_OPTIONS; count=5; defs=Array(5).fill('なし'); }
+    else if (chipType==='right') { opts=CHIP_RIGHT_OPTIONS;count=5; defs=Array(5).fill('なし'); }
+    else { opts=CHIP_ALL_OPTIONS; count=14; defs=getChipMultipleDefaults(); }
+    html += renderBuffList(idx, count, opts, defs);
+  } else if (equipType === 'enigma') {
+    html += '<div class="buff-section-label">▸ メインバフ</div>';
+    html += renderBuffList(idx, 1, ENIGMA_MAIN, ['なし'], 'em');
+    html += '<div class="buff-section-label">▸ サブバフ</div>';
+    html += renderBuffList(idx, 3, ENIGMA_SUB, Array(3).fill('なし'), 'es');
+    html += `<details class="field-section"><summary>フィールドバフ増分</summary>${renderBuffList(idx, 4, ENIGMA_FLD, Array(4).fill('なし'), 'ef')}</details>`;
+  } else if (equipType === 'titan') {
+    html += '<div class="buff-section-label">▸ 基礎バフ</div>';
+    html += renderTitanBase(idx);
+    html += '<div class="buff-section-label">▸ ランダムバフ</div>';
+    html += renderBuffList(idx, 3, TITAN_RAND, Array(3).fill('なし'), 'tr');
+  } else {
+    html += renderBuffList(idx, 5, OTHER_OPTIONS, Array(5).fill('なし'), 'ot');
+  }
+
+  html += renderEquipFooter(idx);
+  body.innerHTML = html;
+  updateEquipTotals(idx);
+}
+
+function escHtml(s) { return (s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+
+function getChipMultipleDefaults() {
+  return ['防御（全体）','ダメ増（全体）','ダメ減（全体）','攻撃（全体）','生命（全体）',
+          '重装開戦シールド','重装防御','重装攻速','重装ダメ増','重装ダメ減','重装攻撃','重装生命','重装会心率','重装会心ダメ'];
+}
+
+function renderBuffList(idx, count, options, defaults, prefix='bf') {
+  const nums = ['１','２','３','４','５','６','７','８','９','１０','１１','１２','１３','１４'];
+  let html = `<div class="buff-list" id="blist_${idx}_${prefix}">`;
+  for (let i = 0; i < count; i++) {
+    const defVal = defaults[i] || 'なし';
+    const selOpts = options.map(o => `<option value="${o}" ${o===defVal?'selected':''}>${o}</option>`).join('');
+    html += `
+    <div class="buff-row" id="brow_${idx}_${prefix}_${i}" data-idx="${idx}" data-pre="${prefix}" data-i="${i}">
+      <div class="buff-head">
+        <span class="buff-num">${nums[i]||i+1}</span>
+        <select class="bsel" id="bsel_${idx}_${prefix}_${i}" onchange="onBuffChange(${idx},'${prefix}',${i})">${selOpts}</select>
+      </div>
+      <input type="number" class="buff-val-input bval" id="bval_${idx}_${prefix}_${i}"
+        value="0" min="0"
+        oninput="onBuffChange(${idx},'${prefix}',${i})"
+        onfocus="clearZero(this)" onblur="fillEmptyBuff(this,${idx},'${prefix}',${i})">
+      <div class="buff-score-wrap" id="bscr_${idx}_${prefix}_${i}"></div>
+    </div>`;
+  }
+  html += '</div>';
+  return html;
+}
+
+function renderTitanBase(idx) {
+  const prefix = 'tb';
+  const nums = ['１','２'];
+  let html = '<div class="buff-list">';
+  [['攻撃','攻撃'],['生命','生命']].forEach(([label,type],i) => {
+    html += `
+    <div class="buff-row" id="brow_${idx}_${prefix}_${i}" data-idx="${idx}" data-pre="${prefix}" data-i="${i}">
+      <div class="buff-head">
+        <span class="buff-num">${nums[i]}</span>
+        <span style="color:var(--text);font-size:0.82rem;padding:4px 8px;background:var(--bg4);border-radius:5px;min-width:130px">${label}</span>
+      </div>
+      <input type="number" class="buff-val-input bval" id="bval_${idx}_${prefix}_${i}"
+        value="0" min="0"
+        oninput="onBuffChangeTitan(${idx},${i},'${type}')"
+        onfocus="clearZero(this)" onblur="fillEmptyTitan(this,${idx},${i},'${type}')">
+      <div class="buff-score-wrap" id="bscr_${idx}_${prefix}_${i}"></div>
+    </div>`;
+  });
+  html += '</div>';
+  return html;
+}
+
+function renderEquipFooter(idx) {
+  return `
+  <div class="equip-footer">
+    <div class="equip-total">
+      <div class="equip-total-row"><span>攻撃換算値 合計</span><span class="equip-total-val" style="color:var(--red2)" id="etotal_atk_${idx}">0.00</span></div>
+      <div class="equip-total-row"><span>生命換算値 合計</span><span class="equip-total-val" style="color:var(--green2)" id="etotal_hp_${idx}">0.00</span></div>
+    </div>
+    <div class="integrated-score">
+      <div class="is-label">統合換算スコア</div>
+      <div class="is-val" id="integrated_${idx}">—</div>
+    </div>
+  </div>`;
+}
+
+function fillEmptyTitan(el, idx, i, type) {
+  if (el.value === '' || el.value == null) { el.value = 0; onBuffChangeTitan(idx, i, type); }
+}
+
+function onBuffChange(idx, prefix, i) {
+  const selEl = document.getElementById('bsel_' + idx + '_' + prefix + '_' + i);
+  const valEl = document.getElementById('bval_' + idx + '_' + prefix + '_' + i);
+  const scrEl = document.getElementById('bscr_' + idx + '_' + prefix + '_' + i);
+  if (!valEl || !scrEl) return;
+  renderBuffScore(scrEl, selEl ? selEl.value : null, parseFloat(valEl.value) || 0);
+  updateEquipTotals(idx);
+}
+
+function onBuffChangeTitan(idx, i, fixedType) {
+  const valEl = document.getElementById('bval_' + idx + '_tb_' + i);
+  const scrEl = document.getElementById('bscr_' + idx + '_tb_' + i);
+  if (!valEl || !scrEl) return;
+  renderBuffScore(scrEl, fixedType, parseFloat(valEl.value) || 0);
+  updateEquipTotals(idx);
+}
+
+function renderBuffScore(el, buffType, rawVal) {
+  const sc = computeBuffScore(buffType, rawVal);
+  if (sc.atk === null && sc.hp === null) { el.innerHTML = ''; return; }
+  const tip = sc.tooltip || '';
+  let html = '<div class="buff-score-both">';
+  if (sc.atk !== null) html += `<span class="buff-score-atk" title="${tip}">攻 ${fmt(sc.atk)}</span>`;
+  if (sc.hp  !== null) html += `<span class="buff-score-hp"  title="${tip}">生 ${fmt(sc.hp)}</span>`;
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+function refreshAllBuffScores(idx) {
+  const body = document.getElementById('equip' + idx + '_body');
+  if (!body) return;
+  body.querySelectorAll('.buff-row').forEach(row => {
+    const pre = row.dataset.pre, i = parseInt(row.dataset.i), ridx = parseInt(row.dataset.idx);
+    if (ridx !== idx) return;
+    const selEl = document.getElementById('bsel_' + idx + '_' + pre + '_' + i);
+    const valEl = document.getElementById('bval_' + idx + '_' + pre + '_' + i);
+    const scrEl = document.getElementById('bscr_' + idx + '_' + pre + '_' + i);
+    if (!valEl || !scrEl) return;
+    const btype = selEl ? selEl.value : (pre === 'tb' ? (i===0?'攻撃':'生命') : null);
+    renderBuffScore(scrEl, btype, parseFloat(valEl.value) || 0);
+  });
+}
+
+function collectAllBuffScores(idx) {
+  const body = document.getElementById('equip' + idx + '_body');
+  let atkTotal = 0, hpTotal = 0;
+  if (!body) return { atkTotal, hpTotal };
+  body.querySelectorAll('.buff-row').forEach(row => {
+    const pre = row.dataset.pre, i = parseInt(row.dataset.i), ridx = parseInt(row.dataset.idx);
+    if (ridx !== idx) return;
+    const selEl = document.getElementById('bsel_' + idx + '_' + pre + '_' + i);
+    const valEl = document.getElementById('bval_' + idx + '_' + pre + '_' + i);
+    if (!valEl) return;
+    const btype = selEl ? selEl.value : (pre === 'tb' ? (i===0?'攻撃':'生命') : null);
+    const sc = computeBuffScore(btype, parseFloat(valEl.value) || 0);
+    if (sc.atk !== null) atkTotal += sc.atk;
+    if (sc.hp  !== null) hpTotal  += sc.hp;
+  });
+  return { atkTotal, hpTotal };
+}
+
+function updateEquipTotals(idx) {
+  const { atkTotal, hpTotal } = collectAllBuffScores(idx);
+  const integrated = hpTotal + atkTotal * R.scoreATKhp;
+  const atkEl = document.getElementById('etotal_atk_' + idx);
+  const hpEl  = document.getElementById('etotal_hp_'  + idx);
+  const intEl = document.getElementById('integrated_' + idx);
+  if (atkEl) atkEl.textContent = fmt(atkTotal);
+  if (hpEl)  hpEl.textContent  = fmt(hpTotal);
+  if (intEl) intEl.textContent = fmt(integrated);
+  state['equip' + idx + 'Scores'] = { atkTotal, hpTotal, integrated };
+  updateCompareBanner();
+}
+
+function updateCompareBanner() {
+  const s1 = state.equip1Scores || { atkTotal:0, hpTotal:0, integrated:0 };
+  const s2 = state.equip2Scores || { atkTotal:0, hpTotal:0, integrated:0 };
+  const name1 = state.equip1Name || '装備１';
+  const name2 = state.equip2Name || '装備２';
+  document.getElementById('cmp_name1').textContent  = name1;
+  document.getElementById('cmp_name2').textContent  = name2;
+  document.getElementById('cmp_score1').textContent = fmt(s1.integrated);
+  document.getElementById('cmp_score2').textContent = fmt(s2.integrated);
+  document.getElementById('cmp_atk1').textContent   = fmt(s1.atkTotal);
+  document.getElementById('cmp_hp1').textContent    = fmt(s1.hpTotal);
+  document.getElementById('cmp_atk2').textContent   = fmt(s2.atkTotal);
+  document.getElementById('cmp_hp2').textContent    = fmt(s2.hpTotal);
+  const diff = s1.integrated - s2.integrated;
+  const col1 = document.getElementById('cmp_col1');
+  const col2 = document.getElementById('cmp_col2');
+  col1.classList.remove('winner'); col2.classList.remove('winner');
+  const diffEl = document.getElementById('cmp_diff');
+  if (Math.abs(diff) < 0.005) {
+    diffEl.innerHTML = '<span class="diff-val diff-zero">差分：±0（同等）</span>';
+  } else if (diff > 0) {
+    col1.classList.add('winner');
+    diffEl.innerHTML = `${name1} が <span class="diff-val diff-pos">+${fmt(diff)}</span> 上回る`;
+  } else {
+    col2.classList.add('winner');
+    diffEl.innerHTML = `${name2} が <span class="diff-val diff-pos">+${fmt(-diff)}</span> 上回る`;
+  }
+  const t1 = document.getElementById('card3_title');
+  const t2 = document.getElementById('card4_title');
+  if (t1) t1.textContent = '装備１のバフ' + (state.equip1Name ? '：' + state.equip1Name : '');
+  if (t2) t2.textContent = '装備２のバフ' + (state.equip2Name ? '：' + state.equip2Name : '');
+}
+
+function onEquipNameChange(idx) {
+  const el = document.getElementById('equip_name_' + idx);
+  state['equip' + idx + 'Name'] = el ? el.value : '';
+  updateCompareBanner();
+}
+
+function getEquipSnapshot(idx) {
+  const body = document.getElementById('equip' + idx + '_body');
+  if (!body) return null;
+  const rows = [];
+  body.querySelectorAll('.buff-row').forEach(row => {
+    const pre = row.dataset.pre, i = parseInt(row.dataset.i), ridx = parseInt(row.dataset.idx);
+    if (ridx !== idx) return;
+    const selEl = document.getElementById('bsel_' + idx + '_' + pre + '_' + i);
+    const valEl = document.getElementById('bval_' + idx + '_' + pre + '_' + i);
+    rows.push({ pre, i, type: selEl ? selEl.value : null, val: valEl ? valEl.value : '0' });
+  });
+  return { rows, chipType: state['chip' + idx + 'Type'] };
+}
+
+function applyEquipSnapshot(toIdx, snap) {
+  if (!snap) return;
+  snap.rows.forEach(({ pre, i, type, val }) => {
+    const selEl = document.getElementById('bsel_' + toIdx + '_' + pre + '_' + i);
+    const valEl = document.getElementById('bval_' + toIdx + '_' + pre + '_' + i);
+    const scrEl = document.getElementById('bscr_' + toIdx + '_' + pre + '_' + i);
+    if (selEl && type) {
+      for (let opt of selEl.options) { if (opt.value === type) { selEl.value = type; break; } }
+    }
+    if (valEl) valEl.value = val;
+    if (scrEl) {
+      const btype = selEl ? selEl.value : (pre === 'tb' ? (i===0?'攻撃':'生命') : null);
+      renderBuffScore(scrEl, btype, parseFloat(val) || 0);
+    }
+  });
+  updateEquipTotals(toIdx);
+}
+
+function copyEquipData(toIdx, fromIdx) {
+  const snap = getEquipSnapshot(fromIdx);
+  if (!snap) return;
+  if (state.equipType === 'chip' && state['chip' + toIdx + 'Type'] !== snap.chipType) {
+    state['chip' + toIdx + 'Type'] = snap.chipType;
+    renderEquip(toIdx);
+  }
+  applyEquipSnapshot(toIdx, snap);
+}
+
+function clearEquipData(idx) {
+  const body = document.getElementById('equip' + idx + '_body');
+  if (!body) return;
+  body.querySelectorAll('.bval').forEach(el => { el.value = 0; });
+  body.querySelectorAll('.bsel').forEach(el => { el.selectedIndex = 0; });
+  body.querySelectorAll('.buff-score-wrap').forEach(el => { el.innerHTML = ''; });
+  updateEquipTotals(idx);
+}
+
+function setChipType(idx, type) {
+  state['chip' + idx + 'Type'] = type;
+  renderEquip(idx);
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  recalc();
+  renderEquip(1);
+  renderEquip(2);
+});
+</script>
+</body>
+</html>
