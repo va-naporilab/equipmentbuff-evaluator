@@ -8,7 +8,7 @@
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700;900&family=Rajdhani:wght@500;600;700&display=swap');
 
   :root {
-    --bg: #181c24;
+    --bg: #8497bd;
     --bg2: #20262f;
     --bg3: #2a3140;
     --bg4: #343d50;
@@ -53,12 +53,15 @@
   .main-wrap {
     max-width: 1100px; margin: 0 auto;
     padding: 18px 14px 0;
-    display: flex; flex-direction: column; gap: 12px;
+    display: flex; flex-direction: column; gap: 24px;
+    align-items: center;
   }
 
   .card {
     background: var(--bg2); border: 1px solid var(--border);
     border-radius: var(--card-radius); box-shadow: var(--shadow); overflow: hidden;
+    width: 100%;
+    max-width: 540px;
   }
   .card-header {
     display: flex; align-items: center; gap: 10px;
@@ -101,7 +104,7 @@
   .yn-note { font-size: 0.72rem; color: var(--text2); margin-bottom: 10px; line-height: 1.65; }
   .section-sep { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
 
-  .scores-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(215px, 1fr)); gap: 10px; }
+  .scores-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
   .score-item { background: var(--bg3); border-radius: 8px; padding: 10px 14px; border: 1px solid var(--border); }
   .score-item .s-label { font-size: 0.72rem; color: var(--text2); margin-bottom: 2px; }
   .score-item .s-value { font-family: 'Rajdhani', monospace; font-size: 1.2rem; font-weight: 700; color: var(--accent2); }
@@ -112,6 +115,9 @@
     background: var(--bg2); border: 2px solid var(--accent);
     border-radius: var(--card-radius); padding: 14px 18px;
     box-shadow: 0 0 20px rgba(240,165,0,0.1);
+    width: 100%;
+    max-width: 540px;
+    align-self: center;
   }
   .equip-type-wrap > label { display: block; font-size: 0.8rem; color: var(--accent); font-weight: 700; margin-bottom: 8px; letter-spacing: 0.05em; }
   .equip-type-wrap select {
@@ -128,6 +134,9 @@
   .compare-banner {
     background: var(--bg2); border: 1px solid var(--border);
     border-radius: var(--card-radius); padding: 14px 18px; box-shadow: var(--shadow);
+    width: 100%;
+    max-width: 540px;
+    align-self: center;
   }
   .compare-banner .cb-title { font-size: 0.75rem; color: var(--accent); font-weight: 700; letter-spacing: 0.08em; margin-bottom: 10px; }
   .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -236,10 +245,52 @@
   .integrated-score .is-label { font-size: 0.7rem; color: var(--accent); font-weight: 700; letter-spacing: 0.05em; }
   .integrated-score .is-val { font-family: 'Rajdhani', monospace; font-size: 1.8rem; font-weight: 700; color: var(--accent2); line-height: 1.2; }
 
+  #card2 {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  #card2 .card-body {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .cards-row {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  
+  .score-item.fire { color: var(--text); }
+  .score-item.fire .s-value { color: var(--red2); }
+  .score-item.durable { color: var(--text); }
+  .score-item.durable .s-value { color: var(--green2); }
+  .score-item.neutral .s-value { color: var(--accent2); }
+  
+  .score-item.split { display: flex; flex-direction: column; gap: 6px; }
+  .score-item.split .s-value { font-size: 1rem; }
+  .score-item.big.split .s-value { font-size: 1.2rem; }
+
+  @media (max-width: 900px) {
+    .cards-row {
+      flex-direction: row;
+    }
+    .cards-row .card {
+      max-width: 540px;
+    }
+  }
+
   @media (max-width: 600px) {
     .buff-row { grid-template-columns: 1fr 70px auto; }
-    .scores-grid, .compare-grid { grid-template-columns: 1fr; }
+    .compare-grid { grid-template-columns: 1fr; }
     .compare-diff { grid-column: span 1; }
+  }
+  
+  @media (max-width: 400px) {
+    .scores-grid { grid-template-columns: 1fr; }
   }
 </style>
 </head>
@@ -339,26 +390,26 @@
     </div>
   </div>
 
-  <!-- ② 換算値・強さ表示 -->
+  <!-- ② 火力耐久倍率・換算比 -->
   <div class="card" id="card2">
     <div class="card-header" onclick="toggleCard('card2')">
       <span class="card-badge">②</span>
-      <span class="card-title">換算値・強さ表示</span>
+      <span class="card-title">火力耐久倍率・換算比</span>
       <span class="collapse-icon">▼</span>
     </div>
     <div class="card-body">
       <div class="scores-grid">
-        <div class="score-item big"><div class="s-label">総火力</div><div class="s-value" id="disp_tfp">—</div></div>
-        <div class="score-item big"><div class="s-label">総耐久</div><div class="s-value" id="disp_tdur">—</div></div>
-        <div class="score-item"><div class="s-label">攻撃１は生命１に対して</div><div class="s-value" id="disp_scoreATKhp">—</div></div>
-        <div class="score-item"><div class="s-label">ダメ増１は攻撃にすると</div><div class="s-value" id="disp_scoreDMGInc">—</div></div>
-        <div class="score-item"><div class="s-label">ダメ減１は生命にすると</div><div class="s-value" id="disp_scoreDMGDec">—</div></div>
-        <div class="score-item"><div class="s-label">防御１は生命にすると</div><div class="s-value" id="disp_scoreDEF">—</div></div>
-        <div class="score-item"><div class="s-label">開戦シールド１は生命にすると</div><div class="s-value" id="disp_scoreShield">—</div></div>
-        <div class="score-item"><div class="s-label">出撃上限１は生命・攻撃にすると</div><div class="s-value" id="disp_scoreMS" style="font-size:0.92rem">—</div></div>
-        <div class="score-item" id="score_affin_item" style="display:none"><div class="s-label">相性防御１は生命にすると</div><div class="s-value" id="disp_scoreAffinDEF">—</div></div>
-        <div class="score-item" id="score_crtrate_item" style="display:none"><div class="s-label">会心率加算１は攻撃にすると</div><div class="s-value" id="disp_scoreCrtRate">—</div></div>
-        <div class="score-item" id="score_crtdmg_item" style="display:none"><div class="s-label">会心ダメ１は攻撃にすると</div><div class="s-value" id="disp_scoreCrtDMG">—</div></div>
+        <div class="score-item big fire"><div class="s-label">総火力</div><div class="s-value" id="disp_tfp">—</div></div>
+        <div class="score-item big durable"><div class="s-label">総耐久</div><div class="s-value" id="disp_tdur">—</div></div>
+        <div class="score-item split"><div class="s-label">出撃上限１は生命・攻撃にすると</div><div id="disp_scoreMS" style="font-size:0.92rem">—</div></div>
+        <div class="score-item neutral"><div class="s-label">攻撃１は生命１に対して</div><div class="s-value" id="disp_scoreATKhp">—</div></div>
+        <div class="score-item fire"><div class="s-label">ダメ増１は攻撃にすると</div><div class="s-value" id="disp_scoreDMGInc">—</div></div>
+        <div class="score-item durable"><div class="s-label">ダメ減１は生命にすると</div><div class="s-value" id="disp_scoreDMGDec">—</div></div>
+        <div class="score-item durable"><div class="s-label">防御１は生命にすると</div><div class="s-value" id="disp_scoreDEF">—</div></div>
+        <div class="score-item durable"><div class="s-label">開戦シールド１は生命にすると</div><div class="s-value" id="disp_scoreShield">—</div></div>
+        <div class="score-item durable" id="score_affin_item" style="display:none"><div class="s-label">相性防御１は生命にすると</div><div class="s-value" id="disp_scoreAffinDEF">—</div></div>
+        <div class="score-item fire" id="score_crtrate_item" style="display:none"><div class="s-label">会心率加算１は攻撃にすると</div><div class="s-value" id="disp_scoreCrtRate">—</div></div>
+        <div class="score-item fire" id="score_crtdmg_item" style="display:none"><div class="s-label">会心ダメ１は攻撃にすると</div><div class="s-value" id="disp_scoreCrtDMG">—</div></div>
       </div>
     </div>
   </div>
@@ -389,6 +440,29 @@
     </details>
   </div>
 
+  <!-- ③ 装備１ / ④ 装備２ -->
+  <div class="cards-row">
+  <!-- ③ 装備１ -->
+  <div class="card" id="card3">
+    <div class="card-header" onclick="toggleCard('card3')">
+      <span class="card-badge">③</span>
+      <span class="card-title" id="card3_title">装備１のバフ</span>
+      <span class="collapse-icon">▼</span>
+    </div>
+    <div class="card-body" id="equip1_body"></div>
+  </div>
+
+  <!-- ④ 装備２ -->
+  <div class="card" id="card4">
+    <div class="card-header" onclick="toggleCard('card4')">
+      <span class="card-badge">④</span>
+      <span class="card-title" id="card4_title">装備２のバフ</span>
+      <span class="collapse-icon">▼</span>
+    </div>
+    <div class="card-body" id="equip2_body"></div>
+  </div>
+  </div>
+
   <!-- 比較サマリー -->
   <div class="compare-banner">
     <div class="cb-title">▶ 比較サマリー</div>
@@ -411,26 +485,6 @@
       </div>
       <div class="compare-diff" id="cmp_diff">差分：—</div>
     </div>
-  </div>
-
-  <!-- ③ 装備１ -->
-  <div class="card" id="card3">
-    <div class="card-header" onclick="toggleCard('card3')">
-      <span class="card-badge">③</span>
-      <span class="card-title" id="card3_title">装備１のバフ</span>
-      <span class="collapse-icon">▼</span>
-    </div>
-    <div class="card-body" id="equip1_body"></div>
-  </div>
-
-  <!-- ④ 装備２ -->
-  <div class="card" id="card4">
-    <div class="card-header" onclick="toggleCard('card4')">
-      <span class="card-badge">④</span>
-      <span class="card-title" id="card4_title">装備２のバフ</span>
-      <span class="collapse-icon">▼</span>
-    </div>
-    <div class="card-body" id="equip2_body"></div>
   </div>
 
 </div>
@@ -536,7 +590,7 @@ function updateScoreDisplay() {
   document.getElementById('disp_scoreDMGDec').textContent = fmt(R.scoreDMGDec);
   document.getElementById('disp_scoreDEF').textContent    = fmt(R.scoreDEF);
   document.getElementById('disp_scoreShield').textContent = fmt(R.scoreShield);
-  document.getElementById('disp_scoreMS').innerHTML = '生命 <b>' + fmt(R.scoreMShp) + '</b>、攻撃 <b>' + fmt(R.scoreMSatk) + '</b>';
+  document.getElementById('disp_scoreMS').innerHTML = '<span style="color:var(--green2)">生命 <b>' + fmt(R.scoreMShp) + '</b></span>、<span style="color:var(--red2)">攻撃 <b>' + fmt(R.scoreMSatk) + '</b></span>';
   const showAff = state.toggle_aff, showCrt = state.toggle_crt;
   document.getElementById('score_affin_item').style.display   = showAff ? '' : 'none';
   document.getElementById('score_crtrate_item').style.display = showCrt ? '' : 'none';
